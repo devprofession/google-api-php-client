@@ -1,7 +1,5 @@
 <?php
 
-use Prophecy\Argument;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -21,89 +19,16 @@ use Prophecy\Argument;
  * under the License.
  */
 
-class Google_AccessToken_RevokeTest extends BaseTest
+namespace Google\Tests\AccessToken;
+
+use Google\AccessToken\Revoke;
+use Google\Tests\BaseTest;
+use Prophecy\Argument;
+
+class RevokeTest extends BaseTest
 {
-    public function testRevokeAccessGuzzle5()
+    public function testRevokeAccess()
     {
-        $this->onlyGuzzle5();
-
-        $accessToken = 'ACCESS_TOKEN';
-        $refreshToken = 'REFRESH_TOKEN';
-        $token = '';
-
-        $response = $this->prophesize('GuzzleHttp\Message\ResponseInterface');
-        $response->getStatusCode()
-            ->shouldBeCalledTimes(3)
-            ->willReturn(200);
-
-        $response->getHeaders()->willReturn([]);
-        $response->getBody()->willReturn('');
-        $response->getProtocolVersion()->willReturn('');
-        $response->getReasonPhrase()->willReturn('');
-
-        $http = $this->prophesize('GuzzleHttp\ClientInterface');
-        $http->send(Argument::type('GuzzleHttp\Message\RequestInterface'))
-            ->shouldBeCalledTimes(3)
-            ->will(function ($args) use (&$token, $response) {
-                $request = $args[0];
-                parse_str((string) $request->getBody(), $fields);
-                $token = isset($fields['token']) ? $fields['token'] : null;
-
-                return $response->reveal();
-            });
-
-        $requestToken = null;
-        $request = $this->prophesize('GuzzleHttp\Message\RequestInterface');
-        $request->getBody()
-            ->shouldBeCalledTimes(3)
-            ->will(function () use (&$requestToken) {
-                return 'token='.$requestToken;
-            });
-
-        $http->createRequest(Argument::any(), Argument::any(), Argument::any())
-            ->shouldBeCalledTimes(3)
-            ->will(function ($args) use (&$requestToken, $request) {
-                $params = $args[2];
-                parse_str((string) $params['body'], $fields);
-                $requestToken = isset($fields['token']) ? $fields['token'] : null;
-
-                return $request;
-            });
-
-        $t = [
-            'access_token' => $accessToken,
-            'created' => time(),
-            'expires_in' => '3600'
-        ];
-
-        // Test with access token.
-        $revoke = new Google_AccessToken_Revoke($http->reveal());
-        $this->assertTrue($revoke->revokeToken($t));
-        $this->assertEquals($accessToken, $token);
-
-        // Test with refresh token.
-        $revoke = new Google_AccessToken_Revoke($http->reveal());
-        $t = [
-            'access_token' => $accessToken,
-            'refresh_token' => $refreshToken,
-            'created' => time(),
-            'expires_in' => '3600'
-        ];
-
-        $this->assertTrue($revoke->revokeToken($t));
-        $this->assertEquals($refreshToken, $token);
-
-        // Test with token string.
-        $revoke = new Google_AccessToken_Revoke($http->reveal());
-        $t = $accessToken;
-        $this->assertTrue($revoke->revokeToken($t));
-        $this->assertEquals($accessToken, $token);
-    }
-
-    public function testRevokeAccessGuzzle6Or7()
-    {
-        $this->onlyGuzzle6Or7();
-
         $accessToken = 'ACCESS_TOKEN';
         $refreshToken = 'REFRESH_TOKEN';
         $token = '';
@@ -130,12 +55,12 @@ class Google_AccessToken_RevokeTest extends BaseTest
         ];
 
         // Test with access token.
-        $revoke = new Google_AccessToken_Revoke($http->reveal());
+        $revoke = new Revoke($http->reveal());
         $this->assertTrue($revoke->revokeToken($t));
         $this->assertEquals($accessToken, $token);
 
         // Test with refresh token.
-        $revoke = new Google_AccessToken_Revoke($http->reveal());
+        $revoke = new Revoke($http->reveal());
         $t = [
             'access_token' => $accessToken,
             'refresh_token' => $refreshToken,
@@ -147,7 +72,7 @@ class Google_AccessToken_RevokeTest extends BaseTest
         $this->assertEquals($refreshToken, $token);
 
         // Test with token string.
-        $revoke = new Google_AccessToken_Revoke($http->reveal());
+        $revoke = new Revoke($http->reveal());
         $t = $accessToken;
         $this->assertTrue($revoke->revokeToken($t));
         $this->assertEquals($accessToken, $token);
